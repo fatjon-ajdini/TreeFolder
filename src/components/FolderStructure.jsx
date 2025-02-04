@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import StructureItem from "./StructureItem";
 import { FiFolder, FiPlus } from "react-icons/fi";
 import initialStructure from "../data/initialStructure";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 const FolderStructure = () => {
   const [structure, setStructure] = useState(() => {
@@ -17,6 +18,10 @@ const FolderStructure = () => {
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [editingId, setEditingId] = useState(null);
   const [newName, setNewName] = useState("");
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [dialogMessage, setDialogMessage] = useState("");
 
   useEffect(() => {
     if (!Array.isArray(structure)) {
@@ -102,6 +107,12 @@ const FolderStructure = () => {
   };
 
   const handleDelete = (id) => {
+    setDeleteTargetId(id);
+    setDialogMessage(
+      "Are you sure you want to delete this item? This action cannot be undone."
+    );
+    setShowDeleteDialog(true);
+
     const deleteItem = (items) => {
       return items.filter((item) => {
         if (item.id === id) return false;
@@ -113,6 +124,23 @@ const FolderStructure = () => {
     };
 
     setStructure((prev) => deleteItem(prev));
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteDialog(false);
+
+    const deleteItem = (items) => {
+      return items.filter((item) => {
+        if (item.id === deleteTargetId) return false;
+        if (item.isFolder && item.items) {
+          item.items = deleteItem(item.items);
+        }
+        return true;
+      });
+    };
+
+    setStructure((prev) => deleteItem(prev));
+    setDeleteTargetId(null);
   };
 
   return (
@@ -149,6 +177,17 @@ const FolderStructure = () => {
           <div className="text-red-500">Invalid data structure</div>
         )}
       </div>
+      {showDeleteDialog && (
+        <ConfirmationDialog
+          title="Confirm Deletion"
+          message={dialogMessage}
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setShowDeleteDialog(false);
+            setDeleteTargetId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
